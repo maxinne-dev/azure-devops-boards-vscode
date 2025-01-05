@@ -1,0 +1,16 @@
+**/*.test.js
+**/*.spec.js
+.vscode/**
+.vscode-test/**
+**/tsconfig.json
+**/eslint.config.mjs
+**/*.map
+**/*.ts
+**/*.log
+**/*.md
+resources/md/*.png
+src/**
+out/test/**
+.vscode-test.mjs
+.gitignore
+.yarnrc

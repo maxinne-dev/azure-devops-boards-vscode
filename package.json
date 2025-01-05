@@ -1,0 +1,275 @@
+{
+  "name": "azure-devops-boards-vscode",
+  "displayName": "Azure DevOps Boards",
+  "description": "A VS Code extension that integrates Azure DevOps Boards view.",
+  "publisher": "ztt25",
+  "version": "0.0.4",
+  "repository": {
+    "url": "https://github.com/ztt25/azure-devops-boards-vscode"
+  },
+  "icon": "resources/icon.png",
+  "engines": {
+    "vscode": "^1.96.0"
+  },
+  "categories": [
+    "Azure"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "configuration": {
+      "type": "object",
+      "title": "Azure DevOps Boards",
+      "properties": {
+        "adoBoards.adoPersonalAccessToken": {
+          "type": "string",
+          "markdownDescription": "https://learn.microsoft.com/en-us/azure/devops/organizations/accounts/use-personal-access-tokens-to-authenticate  \n  \\* Required"
+        },
+        "adoBoards.serverUrl": {
+          "type": "string",
+          "markdownDescription": "`https://dev.azure.com/{organization}`  \n  \\* Required"
+        },
+        "adoBoards.projectId": {
+          "type": "string",
+          "markdownDescription": "\\* Required"
+        },
+        "adoBoards.githubPersonalAccessToken": {
+          "type": "string",
+          "markdownDescription": "https://github.com/settings/tokens"
+        },
+        "adoBoards.defaultInitialTasks": {
+          "type": "string",
+          "default": "[]",
+          "description": "JSON string array of initial tasks to create on a new work item."
+        },
+        "adoBoards.webHook.workItemStateChange": {
+          "type": "string",
+          "markdownDescription": "JSON object of webhooks to trigger when a work item changed to certain states.  \n  Example: `{\"url\": \"https://example.com/webhook\",\n    \"watchStates\": [\"Ready for Testing\"]}`"
+        },
+        "adoBoards.webHook.pullRequestReadyForReview": {
+          "type": "string"
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "adoBoards.refreshTree",
+        "category": "Azure DevOps Boards",
+        "title": "Refresh",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "adoBoards.selectTeam",
+        "category": "Azure DevOps Boards",
+        "title": "Select Team..."
+      },
+      {
+        "command": "adoBoards.selectIteration",
+        "category": "Azure DevOps Boards",
+        "title": "Select Sprint..."
+      },
+      {
+        "command": "adoBoards.openInBrowser",
+        "title": "Open in Browser",
+        "icon": "$(globe)"
+      },
+      {
+        "command": "adoBoards.updateItemState",
+        "title": "Update Item State..."
+      },
+      {
+        "command": "adoBoards.assignTo",
+        "title": "Assign to..."
+      },
+      {
+        "command": "adoBoards.preview",
+        "title": "Preview",
+        "icon": "$(open-preview)"
+      },
+      {
+        "command": "adoBoards.createInitialTasks",
+        "title": "Create Initial Tasks"
+      },
+      {
+        "command": "adoBoards.createSubtask",
+        "title": "Create Subtask"
+      },
+      {
+        "command": "adoBoards.deleteSubtask",
+        "title": "Delete"
+      },
+      {
+        "command": "adoBoards.pullRequest.openInGithubDev",
+        "title": "Open in github.dev"
+      },
+      {
+        "command": "adoBoards.pullRequest.openInCurrentWorkspace",
+        "title": "Open in Current Workspace"
+      },
+      {
+        "command": "adoBoards.pullRequest.readyForReview",
+        "title": "Ready for Review"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "adoBoards",
+          "title": "Azure DevOps Boards",
+          "icon": "resources/ado.svg"
+        }
+      ]
+    },
+    "views": {
+      "adoBoards": [
+        {
+          "id": "adoSprintView",
+          "name": "Sprint"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "adoSprintView",
+        "contents": "Please configure all the required settings for the Azure DevOps Boards extension and then reload the current VS Code window. \n[Open Settings](command:workbench.action.openSettings?%5B%22adoBoards%22%5D)",
+        "when": "!config.adoBoards.adoPersonalAccessToken || !config.adoBoards.serverUrl || !config.adoBoards.projectId"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "adoBoards.openInBrowser",
+          "when": "false"
+        },
+        
+        {
+          "command": "adoBoards.updateItemState",
+          "when": "false"
+        },
+        {
+          "command": "adoBoards.assignTo",
+          "when": "false"
+        },
+        {
+          "command": "adoBoards.preview",
+          "when": "false"
+        },
+        {
+          "command": "adoBoards.createInitialTasks",
+          "when": "false"
+        },
+        {
+          "command": "adoBoards.createSubtask",
+          "when": "false"
+        },
+        {
+          "command": "adoBoards.deleteSubtask",
+          "when": "false"
+        },
+        {
+          "command": "adoBoards.pullRequest.openInGithubDev",
+          "when": "false"
+        },
+        {
+          "command": "adoBoards.pullRequest.openInCurrentWorkspace",
+          "when": "false"
+        },
+        {
+          "command": "adoBoards.pullRequest.readyForReview",
+          "when": "false"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "adoBoards.refreshTree",
+          "when": "view == adoSprintView",
+          "group": "navigation"
+        },
+        {
+          "command": "adoBoards.selectTeam",
+          "when": "view == adoSprintView",
+          "group": "inline"
+        },
+        {
+          "command": "adoBoards.selectIteration",
+          "when": "view == adoSprintView",
+          "group": "inline"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "adoBoards.updateItemState",
+          "when": "view == adoSprintView && (viewItem == 'parentTaskItem' || viewItem == 'childTaskItem')",
+          "group": "itemAction"
+        },
+        {
+          "command": "adoBoards.assignTo",
+          "when": "view == adoSprintView && (viewItem == 'parentTaskItem' || viewItem == 'childTaskItem')",
+          "group": "itemAction"
+        },
+        {
+          "command": "adoBoards.preview",
+          "when": "view == adoSprintView && (viewItem == 'parentTaskItem' || viewItem == 'childTaskItem')",
+          "group": "inline"
+        },
+        {
+          "command": "adoBoards.createInitialTasks",
+          "when": "view == adoSprintView && viewItem == 'parentTaskItem'"
+        },
+        {
+          "command": "adoBoards.createSubtask",
+          "when": "view == adoSprintView && viewItem == 'parentTaskItem'"
+        },
+        {
+          "command": "adoBoards.deleteSubtask",
+          "when": "view == adoSprintView && viewItem == 'childTaskItem'"
+        },
+        {
+          "command": "adoBoards.openInBrowser",
+          "when": "view == adoSprintView && (viewItem == 'parentTaskItem' || viewItem == 'childTaskItem' || viewItem == 'githubPullRequest')",
+          "group": "inline"
+        },
+        {
+          "command": "adoBoards.pullRequest.openInGithubDev",
+          "when": "view == adoSprintView && viewItem == 'githubPullRequest'",
+          "group": "open"
+        },
+        {
+          "command": "adoBoards.pullRequest.readyForReview",
+          "when": "view == adoSprintView && viewItem == 'githubPullRequest'"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "rimraf ./out && tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src",
+    "test": "vscode-test",
+    "vsce": "vsce package"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.8",
+    "@types/node": "20.x",
+    "@types/vscode": "^1.94.0",
+    "@typescript-eslint/eslint-plugin": "^8.7.0",
+    "@typescript-eslint/parser": "^8.7.0",
+    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-electron": "^2.4.1",
+    "eslint": "^9.11.1",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-import-resolver-typescript": "^3.7.0",
+    "eslint-plugin-import": "^2.31.0",
+    "eslint-plugin-prettier": "^5.2.1",
+    "prettier": "^3.4.2",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.7.2",
+    "vsce": "^2.15.0"
+  },
+  "dependencies": {
+    "@octokit/rest": "^21.0.2",
+    "azure-devops-node-api": "^14.1.0"
+  }
+}
