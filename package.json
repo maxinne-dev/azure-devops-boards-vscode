@@ -23,11 +23,11 @@
       "properties": {
         "adoBoards.adoPersonalAccessToken": {
           "type": "string",
-          "markdownDescription": "https://learn.microsoft.com/en-us/azure/devops/organizations/accounts/use-personal-access-tokens-to-authenticate  \n  \\* Required"
+          "markdownDescription": "https://learn.microsoft.com/en-us/azure/devops/organizations/accounts/use-personal-access-tokens-to-authenticate  \n\n  Required access scopes: `User Profile (Read)`, `Project and Team (Read)`, `Work Items (Read & write)`.  \n\n  Full access is required to display the GitHub pull request list due to the use of an [undocumented API](https://github.com/ztt25/azure-devops-boards-vscode/blob/main/src/utils/getGitHubArtifact.ts).  \n\n  \\* Required"
         },
         "adoBoards.serverUrl": {
           "type": "string",
-          "markdownDescription": "`https://dev.azure.com/{organization}`  \n  \\* Required"
+          "markdownDescription": "`https://dev.azure.com/{organization}`  \n\n  \\* Required"
         },
         "adoBoards.projectId": {
           "type": "string",
@@ -35,7 +35,7 @@
         },
         "adoBoards.githubPersonalAccessToken": {
           "type": "string",
-          "markdownDescription": "https://github.com/settings/tokens"
+          "markdownDescription": "https://github.com/settings/tokens  \n\n  Required access scope: `Pull requests (Read & write)` (fine-grained token) or `repo` (classic token)."
         },
         "adoBoards.defaultInitialTasks": {
           "type": "string",
@@ -44,7 +44,7 @@
         },
         "adoBoards.webHook.workItemStateChange": {
           "type": "string",
-          "markdownDescription": "JSON object of webhooks to trigger when a work item changed to certain states.  \n  Example: `{\"url\": \"https://example.com/webhook\",\n    \"watchStates\": [\"Ready for Testing\"]}`"
+          "markdownDescription": "JSON object of webhooks to trigger when a work item changed to certain states.  \n\n  Example: `{\"url\": \"https://example.com/webhook\",\n    \"watchStates\": [\"Ready for Testing\"]}`"
         },
         "adoBoards.webHook.pullRequestReadyForReview": {
           "type": "string"

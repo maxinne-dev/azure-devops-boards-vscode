@@ -15,6 +15,11 @@ This extension provides a tree view panel for the Azure DevOps Boards within Vis
 ## Extension Settings
 
 - **(Required)** `adoBoards.adoPersonalAccessToken`: [ADO Personal Access Token](https://learn.microsoft.com/en-us/azure/devops/organizations/accounts/use-personal-access-tokens-to-authenticate)
+  - Required access scopes:
+    - User Profile (Read)
+    - Project and Team (Read)
+    - Work Items (Read & write)
+  - Full access is required to display the GitHub pull request list due to the use of an [undocumented API](https://github.com/ztt25/azure-devops-boards-vscode/blob/main/src/utils/getGitHubArtifact.ts).
 - **(Required)** `adoBoards.serverUrl`: Usually in this format `https://dev.azure.com/{organization}`.
 - **(Required)** `adoBoards.projectId`: Your project id.
 

@@ -2,7 +2,11 @@ import * as azdev from 'azure-devops-node-api';
 import { CoreApi } from 'azure-devops-node-api/CoreApi';
 import { TeamContext } from 'azure-devops-node-api/interfaces/CoreInterfaces';
 import { TimeFrame } from 'azure-devops-node-api/interfaces/WorkInterfaces';
-import { WorkItemExpand, CommentExpandOptions } from 'azure-devops-node-api/interfaces/WorkItemTrackingInterfaces';
+import {
+  WorkItemExpand,
+  CommentExpandOptions,
+  WorkItemTypeStateColors,
+} from 'azure-devops-node-api/interfaces/WorkItemTrackingInterfaces';
 import { ProfileApi } from 'azure-devops-node-api/ProfileApi';
 import { WorkApi } from 'azure-devops-node-api/WorkApi';
 import { WorkItemTrackingApi } from 'azure-devops-node-api/WorkItemTrackingApi';
@@ -35,7 +39,13 @@ const _getApis: () => Promise<AdoApi> = async () => {
   const coreApi = await connection.getCoreApi();
   const workItemTrackingApi = await connection.getWorkItemTrackingApi();
 
-  // profileApi only available in Visual Studio Shared Platform Services (vssps).
+  /**
+   * Please note that some API's (e.g. ProfileApi) can't be hit at the org level,
+   * and has to be hit at the deployment level, so url should be structured
+   * like https://vssps.dev.azure.com/{yourorgname}
+   *
+   * @see https://github.com/microsoft/azure-devops-node-api?tab=readme-ov-file#create-a-connection
+   */
   let profileApi;
   if (serverUrl.startsWith('https://dev.azure.com')) {
     const vsspsServerUrl = serverUrl.replace('https://dev.azure.com', 'https://vssps.dev.azure.com');
@@ -68,11 +78,14 @@ export const getIterations = async (teamContext: TeamContext, current = false) =
   return iterations.reverse();
 };
 
-export const getWorkItemTypeStateColors = async () => {
+export const getWorkItemTypeStateColors: () => Promise<WorkItemTypeStateColors[]> = async () => {
   const { projectId } = getSettings();
   const { workItemTrackingApi } = await getApis();
-  const [{ workItemTypeStateColors = [] }] = await workItemTrackingApi.getWorkItemStateColors([projectId]);
-  return workItemTypeStateColors;
+  const workItemTypes = await workItemTrackingApi.getWorkItemTypes(projectId);
+  return workItemTypes.map(({ name, states }) => ({
+    workItemTypeName: name,
+    stateColors: states,
+  }));
 };
 
 export const getTaskBoardColumns = async (teamContext: TeamContext) => {

@@ -7,7 +7,6 @@
 **/*.map
 **/*.ts
 **/*.log
-**/*.md
 resources/md/*.png
 src/**
 out/test/**

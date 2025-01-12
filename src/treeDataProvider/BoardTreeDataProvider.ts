@@ -3,7 +3,7 @@ import { TaskboardColumn } from 'azure-devops-node-api/interfaces/WorkInterfaces
 import { WorkItem, WorkItemTypeStateColors } from 'azure-devops-node-api/interfaces/WorkItemTrackingInterfaces';
 import * as vscode from 'vscode';
 import { STATE_ICON_COLOR_MAP } from '../constants';
-import { getGithubArtifact } from '../utils';
+import { getGitHubArtifact } from '../utils';
 import { GitHubLinkTreeItem } from './GitHubLinkTreeItem';
 import { WorkItemLinksParentType, WorkItemLinksParentTreeItem } from './WorkItemLinksParentTreeItem';
 import { WorkItemTreeItem } from './WorkItemTreeItem';
@@ -111,7 +111,7 @@ export class BoardTreeDataProvider implements vscode.TreeDataProvider<BoardTreeI
       treeItem.type === WorkItemLinksParentType.GitHub &&
       treeItem.workItem.id
     ) {
-      const prs = await getGithubArtifact(treeItem.workItem.id, treeItem.prLinks);
+      const prs = await getGitHubArtifact(treeItem.workItem.id, treeItem.prLinks);
       return prs?.map((pr) => new GitHubLinkTreeItem(treeItem.workItem, pr));
     }
   }

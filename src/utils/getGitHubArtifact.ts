@@ -1,13 +1,14 @@
 import type { GitHubPullRequest } from '../interfaces';
-import { getSettings } from '../utils';
+import { getSettings } from './getSettings';
 
 /**
- * Undocumented API
+ * Undocumented API.
+ * Full access for the PAT is required to fetch GitHub artifacts.
  *
  * @see https://github.com/dc-ag/azure-devops-pr-notification/blob/fcb9cd24ffbcc2dbe81a7500a3d5577213afa7e3/src/main.ts
  * @see https://github.com/marketplace/actions/azure-devops-commit-validator-and-pull-request-linker#how-the-commit--pull-request-linking-in-azure-devops-works
  */
-export const getGithubArtifact = async (
+export const getGitHubArtifact = async (
   workItemId: number,
   pullRequestArtifactUrls: string[],
 ): Promise<GitHubPullRequest[] | undefined> => {
@@ -47,12 +48,16 @@ export const getGithubArtifact = async (
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('PAT full access is required to fetch GitHub artifacts.');
+    }
+
     throw new Error(
-      `\n--- getGithubArtifact() failed ---\n${JSON.stringify(
+      `\n--- getGitHubArtifact() failed ---\n${JSON.stringify(
         {
           status: response.status,
           parameter: { workItemId, pullRequestArtifactUrls },
-          statusText: await response.json(),
+          statusText: `${response.status} - ${response.statusText}: ${await response.text()}`,
         },
         null,
         2,
@@ -61,10 +66,14 @@ export const getGithubArtifact = async (
   }
 
   const result = (await response.json()) as any;
-  const errorMsg = result?.data?.[msGitHubLinkDataProviderLink].errorMessage;
+  const githubData = result?.data?.[msGitHubLinkDataProviderLink];
+  const errorMsg = githubData?.errorMessage;
+
   if (errorMsg) {
     throw new Error(errorMsg);
+  } else if (!githubData?.resolvedLinkItems?.length) {
+    throw new Error('GitHub resolvedLinkItems not found.');
   }
 
-  return result?.data?.[msGitHubLinkDataProviderLink]?.resolvedLinkItems as GitHubPullRequest[];
+  return githubData.resolvedLinkItems as GitHubPullRequest[];
 };
