@@ -3,7 +3,7 @@
   "displayName": "Azure DevOps Boards",
   "description": "A VS Code extension that integrates Azure DevOps Boards view.",
   "publisher": "ztt25",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "repository": {
     "url": "https://github.com/ztt25/azure-devops-boards-vscode"
   },
