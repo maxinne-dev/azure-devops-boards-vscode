@@ -17,11 +17,17 @@ export type TreeItemData = {
 
 export type BoardTreeItem = WorkItemTreeItem | WorkItemLinksParentTreeItem | GitHubLinkTreeItem | vscode.TreeItem;
 
+export type FilterByOption = { itemId?: number; assignee?: string; state?: string };
+
 export class BoardTreeDataProvider implements vscode.TreeDataProvider<BoardTreeItem> {
-  private _treeItemData: TreeItemData[] = [];
+  public treeItemData: TreeItemData[] = [];
+  public workItemTypeStateColors: WorkItemTypeStateColors[] = [];
+
   private _taskBoardColumns: TaskboardColumn[] = [];
   private _taskBoardColumnsOrder: (string | undefined)[] = [];
-  public _workItemTypeStateColors: WorkItemTypeStateColors[] = [];
+  private _filterBy: FilterByOption | null = null;
+  private _isFilterAction: boolean = false;
+  private _filteredTreeItemData: TreeItemData[] | null = null;
 
   private _onDidChangeTreeData: vscode.EventEmitter<BoardTreeItem | undefined | void> = new vscode.EventEmitter<
     BoardTreeItem | undefined | void
@@ -37,27 +43,27 @@ export class BoardTreeDataProvider implements vscode.TreeDataProvider<BoardTreeI
     const iterationId = await this.iterationIdAsync;
 
     if (!this.teamContext || !iterationId) {
-      this._treeItemData = [];
+      this.treeItemData = [];
       return false;
     }
 
     const getTreeWorkItemsAsync = adoClient.getTreeWorkItems(this.teamContext, iterationId);
 
-    if (!this._taskBoardColumns.length || !this._workItemTypeStateColors.length) {
+    if (!this._taskBoardColumns.length || !this.workItemTypeStateColors.length) {
       const [treeItemData, taskBoardColumns, workItemTypeStateColors] = await Promise.all([
         getTreeWorkItemsAsync,
         adoClient.getTaskBoardColumns(this.teamContext),
         adoClient.getWorkItemTypeStateColors(),
       ]);
 
-      this._treeItemData = treeItemData;
+      this.treeItemData = treeItemData;
       this._taskBoardColumns = taskBoardColumns;
-      this._workItemTypeStateColors = workItemTypeStateColors;
+      this.workItemTypeStateColors = workItemTypeStateColors;
       this._taskBoardColumnsOrder = this._taskBoardColumns
         .sort(({ order: orderA = 0 }, { order: orderB = 0 }) => orderA - orderB)
         .map(({ name }) => name);
     } else {
-      this._treeItemData = await getTreeWorkItemsAsync;
+      this.treeItemData = await getTreeWorkItemsAsync;
     }
 
     return true;
@@ -70,9 +76,18 @@ export class BoardTreeDataProvider implements vscode.TreeDataProvider<BoardTreeI
 
     // root
     if (!treeItem) {
-      await this.initialize();
-      return this._treeItemData.length
-        ? this._treeItemData.map(({ item }) => {
+      if (this._isFilterAction) {
+        this._isFilterAction = false;
+      } else {
+        await this.initialize();
+      }
+
+      this.setFilteredTreeItemData();
+
+      const treeItemData = this._filteredTreeItemData || this.treeItemData;
+
+      return treeItemData.length
+        ? treeItemData.map(({ item }) => {
             const boardItem = new WorkItemTreeItem(item, this.getItemStateIconColor(item));
             boardItem.contextValue = 'parentTaskItem';
             return boardItem;
@@ -82,8 +97,9 @@ export class BoardTreeDataProvider implements vscode.TreeDataProvider<BoardTreeI
 
     // work item
     if (treeItem instanceof WorkItemTreeItem) {
+      const treeItemData = this._filteredTreeItemData || this.treeItemData;
       const children =
-        this._treeItemData
+        treeItemData
           .find(({ id }) => id === treeItem.workItem.id)
           ?.children?.map(({ item }) => {
             const childTreeItem = new WorkItemTreeItem(
@@ -130,6 +146,12 @@ export class BoardTreeDataProvider implements vscode.TreeDataProvider<BoardTreeI
     this._onDidChangeTreeData.fire();
   }
 
+  filterBy(filterBy: FilterByOption | null) {
+    this._filterBy = filterBy;
+    this._isFilterAction = true;
+    this._onDidChangeTreeData.fire();
+  }
+
   private getColumnName(item?: WorkItem): string | undefined {
     const itemType: string = item?.fields?.['System.WorkItemType'] || '';
     const itemState: string = item?.fields?.['System.State'] || '';
@@ -142,9 +164,50 @@ export class BoardTreeDataProvider implements vscode.TreeDataProvider<BoardTreeI
     const workItemType: string = workItem?.fields?.['System.WorkItemType'] || '';
     const workItemState: string = workItem?.fields?.['System.State'] || '';
     const customColor = STATE_ICON_COLOR_MAP[workItemState];
-    const systemColor = this._workItemTypeStateColors
+    const systemColor = this.workItemTypeStateColors
       .find(({ workItemTypeName }) => workItemTypeName === workItemType)
       ?.stateColors?.find(({ name }) => name === workItemState)?.color;
     return customColor || (systemColor ? `#${systemColor}` : '');
+  }
+
+  private matchesFilter(item: WorkItem, filterBy: FilterByOption): boolean {
+    const { itemId, assignee, state } = filterBy;
+    const itemState = item.fields?.['System.State'];
+    const assignedTo = item.fields?.['System.AssignedTo']?.displayName;
+
+    if (itemId && itemId === item.id) {
+      return true;
+    }
+
+    if ((assignee === 'unassigned' && !assignedTo) || (assignee && assignedTo === assignee)) {
+      return true;
+    }
+
+    if (state && state === itemState) {
+      return true;
+    }
+
+    return false;
+  }
+
+  private setFilteredTreeItemData() {
+    const filterBy = this._filterBy;
+    if (this.treeItemData.length && filterBy) {
+      this._filteredTreeItemData = this.treeItemData.reduce<TreeItemData[]>((prev, treeItem) => {
+        const { id, item, children = [] } = treeItem;
+        const parentMatch = this.matchesFilter(item, filterBy);
+        const childrenMatch = children?.filter(({ item }) => this.matchesFilter(item, filterBy));
+
+        if (parentMatch) {
+          prev.push({ id, item, children });
+        } else if (childrenMatch.length) {
+          prev.push({ id, item, children: childrenMatch });
+        }
+
+        return prev;
+      }, []);
+    } else {
+      this._filteredTreeItemData = null;
+    }
   }
 }

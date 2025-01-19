@@ -69,6 +69,37 @@
         "title": "Select Sprint..."
       },
       {
+        "command": "adoBoards.filterBy.reset",
+        "category": "Azure DevOps Boards",
+        "title": "Reset Filter",
+        "icon": "$(clear-all)"
+      },
+      {
+        "command": "adoBoards.filterBy.me",
+        "category": "Azure DevOps Boards",
+        "title": "@Me"
+      },
+      {
+        "command": "adoBoards.filterBy.unassigned",
+        "category": "Azure DevOps Boards",
+        "title": "Unassigned"
+      },
+      {
+        "command": "adoBoards.filterBy.assignee",
+        "category": "Azure DevOps Boards",
+        "title": "Select..."
+      },
+      {
+        "command": "adoBoards.filterBy.state",
+        "category": "Azure DevOps Boards",
+        "title": "State..."
+      },
+      {
+        "command": "adoBoards.filterBy.localGitBranch",
+        "category": "Azure DevOps Boards",
+        "title": "Local Git Branch"
+      },
+      {
         "command": "adoBoards.openInBrowser",
         "title": "Open in Browser",
         "icon": "$(globe)"
@@ -176,13 +207,47 @@
         {
           "command": "adoBoards.pullRequest.readyForReview",
           "when": "false"
+        },
+        {
+          "command": "adoBoards.filterBy.reset",
+          "when": "false"
+        },
+        {
+          "command": "adoBoards.filterBy.me",
+          "when": "false"
+        },
+        {
+          "command": "adoBoards.filterBy.unassigned",
+          "when": "false"
+        },
+        {
+          "command": "adoBoards.filterBy.assignee",
+          "when": "false"
+        },
+        {
+          "command": "adoBoards.filterBy.state",
+          "when": "false"
+        },
+        {
+          "command": "adoBoards.filterBy.localGitBranch",
+          "when": "false"
         }
       ],
       "view/title": [
         {
+          "submenu": "filterBy/submenu",
+          "when": "view == adoSprintView && filterEnabled == false",
+          "group": "navigation@1"
+        },
+        {
+          "command": "adoBoards.filterBy.reset",
+          "when": "view == adoSprintView && filterEnabled == true",
+          "group": "navigation@1"
+        },
+        {
           "command": "adoBoards.refreshTree",
           "when": "view == adoSprintView",
-          "group": "navigation"
+          "group": "navigation@2"
         },
         {
           "command": "adoBoards.selectTeam",
@@ -237,8 +302,52 @@
           "command": "adoBoards.pullRequest.readyForReview",
           "when": "view == adoSprintView && viewItem == 'githubPullRequest'"
         }
+      ],
+      "filterBy/submenu": [
+        {
+          "submenu": "filterBy/assignee",
+          "when": "view == adoSprintView",
+          "group": "submenu@1"
+        },
+        {
+          "command": "adoBoards.filterBy.state",
+          "when": "view == adoSprintView",
+          "group": "submenu@2"
+        },
+        {
+          "command": "adoBoards.filterBy.localGitBranch",
+          "when": "view == adoSprintView",
+          "group": "submenu@3"
+        }
+      ],
+      "filterBy/assignee": [
+        {
+          "command": "adoBoards.filterBy.me",
+          "when": "view == adoSprintView",
+          "group": "preset"
+        },
+        {
+          "command": "adoBoards.filterBy.unassigned",
+          "when": "view == adoSprintView",
+          "group": "preset"
+        },
+        {
+          "command": "adoBoards.filterBy.assignee",
+          "when": "view == adoSprintView"
+        }
       ]
-    }
+    },
+    "submenus": [
+      {
+        "id": "filterBy/submenu",
+        "label": "Filter By...",
+        "icon": "$(filter)"
+      },
+      {
+        "id": "filterBy/assignee",
+        "label": "Assignee"
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
@@ -247,7 +356,8 @@
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src",
     "test": "vscode-test",
-    "vsce": "vsce package"
+    "vsce": "vsce package",
+    "publish:patch": "vsce publish patch"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.8",

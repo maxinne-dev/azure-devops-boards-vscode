@@ -4,7 +4,12 @@ import * as vscode from 'vscode';
 import { GLOBAL_STATE } from './constants';
 import * as adoClient from './services/adoService';
 import { updatePrBody } from './services/githubService';
-import { BoardTreeItem, BoardTreeDataProvider } from './treeDataProvider/BoardTreeDataProvider';
+import {
+  BoardTreeItem,
+  BoardTreeDataProvider,
+  type FilterByOption,
+  type TreeItemData,
+} from './treeDataProvider/BoardTreeDataProvider';
 import { GitHubLinkTreeItem } from './treeDataProvider/GitHubLinkTreeItem';
 import { WorkItemTreeItem } from './treeDataProvider/WorkItemTreeItem';
 import { getWorkItemPreviewHtml, callWebHook, getSettings, openExternalUrl } from './utils';
@@ -46,6 +51,102 @@ export const registerCommands = ({
     const teamName = selectedTeam?.name;
 
     treeView.title = `${iterationName ? `${iterationName} - ` : ''}${teamName || ''}`;
+  }),
+
+  vscode.commands.registerCommand('adoBoards.filterBy.reset', () => {
+    vscode.commands.executeCommand('adoBoards.filterBy', null);
+    vscode.commands.executeCommand('setContext', 'filterEnabled', false);
+  }),
+
+  vscode.commands.registerCommand('adoBoards.filterBy.me', async () => {
+    const currentUserDisplayName = context.globalState.get<{ displayName: string }>(
+      GLOBAL_STATE.CURRENT_USER,
+    )?.displayName;
+    vscode.commands.executeCommand('adoBoards.filterBy', { assignee: currentUserDisplayName });
+  }),
+
+  vscode.commands.registerCommand('adoBoards.filterBy.unassigned', () => {
+    vscode.commands.executeCommand('adoBoards.filterBy', { assignee: 'unassigned' });
+  }),
+
+  vscode.commands.registerCommand('adoBoards.filterBy.assignee', async () => {
+    const assignees = new Set<string>();
+    const pushAssignee = ({ item: { fields } }: TreeItemData) => {
+      if (fields?.['System.AssignedTo']) {
+        assignees.add(fields['System.AssignedTo'].displayName);
+      }
+    };
+
+    treeDataProvider.treeItemData.forEach((treeItem) => {
+      pushAssignee(treeItem);
+      treeItem.children?.forEach((child) => pushAssignee(child));
+    });
+
+    const selectedItem = await vscode.window.showQuickPick(
+      new Array(...assignees).sort().map((name) => ({ label: name })) satisfies vscode.QuickPickItem[],
+      { placeHolder: 'Select a user' },
+    );
+
+    if (selectedItem) {
+      vscode.commands.executeCommand('adoBoards.filterBy', { assignee: selectedItem.label });
+    }
+  }),
+
+  vscode.commands.registerCommand('adoBoards.filterBy.state', async () => {
+    const workItemTypes = new Set<string>();
+    const workItemStates = new Set<string>();
+
+    const pushWorkItemType = ({ item: { fields } }: TreeItemData) => {
+      if (fields?.['System.WorkItemType']) {
+        workItemTypes.add(fields['System.WorkItemType']);
+      }
+    };
+
+    treeDataProvider.treeItemData.forEach((treeItem) => {
+      pushWorkItemType(treeItem);
+      treeItem.children?.forEach((child) => pushWorkItemType(child));
+    });
+
+    workItemTypes.forEach((workItemType) => {
+      const stateColors = treeDataProvider.workItemTypeStateColors.find(
+        ({ workItemTypeName }) => workItemTypeName === workItemType,
+      )?.stateColors;
+
+      stateColors?.forEach(({ name }) => name && workItemStates.add(name));
+    });
+
+    const selectedItem = await vscode.window.showQuickPick(
+      new Array(...workItemStates).map((name) => ({ label: name })) satisfies vscode.QuickPickItem[],
+      { placeHolder: 'Select a state' },
+    );
+
+    if (selectedItem) {
+      vscode.commands.executeCommand('adoBoards.filterBy', { state: selectedItem.label });
+    }
+  }),
+
+  vscode.commands.registerCommand('adoBoards.filterBy.localGitBranch', () => {
+    const gitExtension = vscode.extensions.getExtension('vscode.git')?.exports;
+    const api = gitExtension.getAPI(1);
+    const repo = api.repositories[0];
+
+    if (repo) {
+      const branch = repo.state.HEAD?.name;
+      const match = branch.match(/\d+/);
+      const itemId = match ? parseInt(match[0]) : undefined;
+      if (itemId) {
+        vscode.commands.executeCommand('adoBoards.filterBy', { itemId });
+      } else {
+        vscode.window.showInformationMessage('No work item id found in the current branch name.');
+      }
+    } else {
+      vscode.window.showInformationMessage('No Git repository found.');
+    }
+  }),
+
+  vscode.commands.registerCommand('adoBoards.filterBy', (filterByOption: FilterByOption | null) => {
+    treeDataProvider.filterBy(filterByOption);
+    vscode.commands.executeCommand('setContext', 'filterEnabled', true);
   }),
 
   vscode.commands.registerCommand('adoBoards.selectTeam', async () => {
@@ -149,7 +250,7 @@ export const registerCommands = ({
 
   vscode.commands.registerCommand('adoBoards.updateItemState', async (item?: WorkItemTreeItem) => {
     const selectedItem = await vscode.window.showQuickPick(
-      treeDataProvider._workItemTypeStateColors
+      treeDataProvider.workItemTypeStateColors
         .find(({ workItemTypeName }) => workItemTypeName === item?.workItem?.fields?.['System.WorkItemType'])
         ?.stateColors?.map(
           ({ name }) =>
@@ -191,13 +292,13 @@ export const registerCommands = ({
 
   vscode.commands.registerCommand('adoBoards.assignTo', async (item?: WorkItemTreeItem) => {
     const workItemId = item?.workItem?.id;
-    const currentUser = await adoClient.getCurrentUser();
-    // @ts-ignore
-    const currentUserDisplayName = currentUser.displayName;
+    const currentUserDisplayName = context.globalState.get<{ displayName: string }>(
+      GLOBAL_STATE.CURRENT_USER,
+    )?.displayName;
 
     const selectedItem = await vscode.window.showQuickPick(
       [
-        { label: currentUserDisplayName, description: 'Me' },
+        { label: currentUserDisplayName || '@Me', description: 'Me' },
         { label: 'Unassign' },
         { label: 'Separator', kind: vscode.QuickPickItemKind.Separator },
       ] satisfies vscode.QuickPickItem[],

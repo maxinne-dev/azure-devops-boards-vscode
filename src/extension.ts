@@ -67,6 +67,8 @@ export async function activate(context: vscode.ExtensionContext) {
     }
   }
 
+  adoClient.getCurrentUser().then((currentUser) => context.globalState.update(GLOBAL_STATE.CURRENT_USER, currentUser));
+
   // treeDataProvider.onDidChangeTreeData((e) => {
   //   console.log('Tree data changed', e);
   // });

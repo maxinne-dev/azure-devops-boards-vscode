@@ -1,6 +1,7 @@
 export enum GLOBAL_STATE {
   SELECTED_TEAM = 'selectedTeam',
   SELECTED_ITERATION = 'selectedIteration',
+  CURRENT_USER = 'currentUser',
 }
 
 export const AB_PATTERN = /\[AB#(\d+)\]\(https:\/\/\S+\)(?!\s-.*)/g;
