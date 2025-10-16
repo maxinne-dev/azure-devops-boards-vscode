@@ -23,6 +23,14 @@ This extension provides a tree view panel for the Azure DevOps Boards within Vis
 - **(Required)** `adoBoards.serverUrl`: Usually in this format `https://dev.azure.com/{organization}`.
 - **(Required)** `adoBoards.projectId`: Your project id.
 
+## Security
+
+This extension has been audited for security vulnerabilities. See [SECURITY.md](SECURITY.md) for details.
+
+- ✅ No known security vulnerabilities in dependencies
+- ✅ Secure token storage using VS Code settings
+- ✅ HTTPS-only API communications
+
 ## Feedback
 
 This extension is currently an MVP version. If you have any suggestions or find any bugs, please feel free to submit an issue.
